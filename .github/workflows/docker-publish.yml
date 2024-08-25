@@ -11,6 +11,7 @@ on:
     # Publish semver tags as releases.
     tags: [ 'v*' ]
 
+## docker.io/drakus73/wallet-calc:latest
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: drakus73
