@@ -13,7 +13,7 @@ on:
 
 env:
   # Use docker.io for Docker Hub if empty
-  REGISTRY: hub.docker.com/repository/docker/drakus73
+  REGISTRY: drakus73
   # github.repository as <account>/<repo>
   IMAGE_NAME: wallet-calc
 
