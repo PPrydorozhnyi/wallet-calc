@@ -1,25 +1,55 @@
 package main
 
 import (
-	"fmt"
+	"errors"
+	"log"
+	"net"
+	"net/http"
+	"time"
+	"wallet/handler"
 )
 
-//TIP To run your code, right-click the code and select <b>Run</b>. Alternatively, click
-// the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.
+const addr = ":8081"
+
+//TIP Simple web application
 
 func main() {
-	//TIP Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined or highlighted text
-	// to see how GoLand suggests fixing it.
-	s := "gopher"
-	fmt.Printf("Hello and welcome, %s!\n", s)
 
-	for i := 1; i <= 5; i++ {
-		//TIP You can try debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-		// for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>. To start your debugging session,
-		// right-click your code in the editor and select the <b>Debug</b> option.
-		fmt.Println("i =", 100/i)
+	start := time.Now()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handler.Handle)
+	mux.HandleFunc("/posts", handler.PostsHandle)
+	mux.HandleFunc("/posts/", handler.PostHandle)
+
+	log.Printf("Starting Server on port %s\n", addr)
+
+	go testReadiness(start)
+
+	err := http.ListenAndServe(addr, mux)
+
+	if errors.Is(err, http.ErrServerClosed) {
+		log.Println("Server closed.")
+	} else if err != nil {
+		log.Fatalf("Error starting server: %s", err)
+	} else {
+		log.Printf("Started server in %s.\n", time.Since(start))
 	}
 }
 
-//TIP See GoLand help at <a href="https://www.jetbrains.com/help/go/">jetbrains.com/help/go/</a>.
-// Also, you can try interactive lessons for GoLand by selecting 'Help | Learn IDE Features' from the main menu.
+func testReadiness(startTime time.Time) {
+	for {
+		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if err == nil {
+			e := conn.Close()
+			if e != nil {
+				log.Println("Cannot close test connection")
+			}
+
+			log.Printf("Server is ready to accept connections at %s. Started in %s", time.Now().Format(time.RFC3339),
+				time.Since(startTime))
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
