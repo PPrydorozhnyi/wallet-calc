@@ -5,15 +5,19 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 	"wallet/handler"
 )
 
-const addr = ":8081"
-
 //TIP Simple web application
 
 func main() {
+
+	addr := os.Getenv("PORT")
+	if addr == "" {
+		addr = ":8081"
+	}
 
 	start := time.Now()
 
@@ -24,7 +28,7 @@ func main() {
 
 	log.Printf("Starting Server on port %s\n", addr)
 
-	go testReadiness(start)
+	go testReadiness(start, addr)
 
 	err := http.ListenAndServe(addr, mux)
 
@@ -37,7 +41,7 @@ func main() {
 	}
 }
 
-func testReadiness(startTime time.Time) {
+func testReadiness(startTime time.Time, addr string) {
 	for {
 		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
 		if err == nil {
