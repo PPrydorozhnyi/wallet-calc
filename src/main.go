@@ -7,19 +7,29 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"wallet/db"
 	"wallet/handler"
 )
 
 //TIP Simple web application
 
-func main() {
+var (
+	addr = os.Getenv("PORT")
+)
 
-	addr := os.Getenv("PORT")
+// init suits mainly for verifying correctness of the vars
+func init() {
 	if addr == "" {
 		addr = ":8081"
 	}
+}
+
+func main() {
 
 	start := time.Now()
+
+	initConnectionPool()
+	defer db.CloseConnectionPool()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handler.Handle)
@@ -30,14 +40,32 @@ func main() {
 
 	go testReadiness(start, addr)
 
+	startServer(mux)
+}
+
+func initConnectionPool() {
+	start := time.Now()
+
+	err := db.CreateConnectionPool()
+	if err != nil {
+		log.Fatalf("Failed to create connection pool %s\n", err)
+	}
+
+	err = db.HealthCheck()
+	if err != nil {
+		log.Fatalf("Database is not reachable at the very beginning %s\n", err)
+	}
+
+	log.Printf("Connection pool is initialized in %s\n", time.Since(start))
+}
+
+func startServer(mux *http.ServeMux) {
 	err := http.ListenAndServe(addr, mux)
 
 	if errors.Is(err, http.ErrServerClosed) {
 		log.Println("Server closed.")
 	} else if err != nil {
 		log.Fatalf("Error starting server: %s", err)
-	} else {
-		log.Printf("Started server in %s.\n", time.Since(start))
 	}
 }
 
@@ -50,7 +78,7 @@ func testReadiness(startTime time.Time, addr string) {
 				log.Println("Cannot close test connection")
 			}
 
-			log.Printf("Server is ready to accept connections at %s. Started in %s", time.Now().Format(time.RFC3339),
+			log.Printf("Server is ready to accept requests at %s. Started in %s", time.Now().Format(time.RFC3339),
 				time.Since(startTime))
 			return
 		}
