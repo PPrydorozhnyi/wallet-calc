@@ -21,6 +21,9 @@
 # Go workspace file
 go.work
 
+#Protobuf generated files
+*.pb.go
+
 #Goland
 *.iml
 *.ipr

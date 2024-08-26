@@ -6,8 +6,8 @@ import (
 )
 
 type Post struct {
-	ID   uuid.UUID `json:"id"`
-	Body string    `json:"body"`
+	ID   uuid.UUID `json:"id,omitempty"`
+	Body string    `json:"body,omitempty"`
 }
 
 var (

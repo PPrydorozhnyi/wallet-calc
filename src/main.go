@@ -2,13 +2,13 @@ package main
 
 import (
 	"errors"
+	"github.com/PPrydorozhnyi/wallet/db"
+	"github.com/PPrydorozhnyi/wallet/handler"
+	"github.com/PPrydorozhnyi/wallet/util"
 	"log"
 	"net"
 	"net/http"
 	"time"
-	"wallet/db"
-	"wallet/handler"
-	"wallet/util"
 )
 
 //TIP Simple web application

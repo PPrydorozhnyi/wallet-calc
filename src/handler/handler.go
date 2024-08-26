@@ -3,11 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/PPrydorozhnyi/wallet/model"
 	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strings"
-	"wallet/model"
 )
 
 func Handle(w http.ResponseWriter, r *http.Request) {

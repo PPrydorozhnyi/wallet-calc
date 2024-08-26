@@ -2,21 +2,12 @@ package db
 
 import (
 	"context"
+	"github.com/PPrydorozhnyi/wallet/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"sync"
 	"time"
-	"wallet/util"
-)
-
-const (
-	defaultMaxConns          = int32(250)
-	defaultMinConns          = int32(10)
-	defaultMaxConnLifetime   = time.Hour
-	defaultMaxConnIdleTime   = time.Minute * 30
-	defaultHealthCheckPeriod = time.Minute
-	defaultConnectTimeout    = time.Second * 5
 )
 
 var (
