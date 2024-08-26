@@ -5,24 +5,13 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 	"wallet/db"
 	"wallet/handler"
+	"wallet/util"
 )
 
 //TIP Simple web application
-
-var (
-	addr = os.Getenv("PORT")
-)
-
-// init suits mainly for verifying correctness of the vars
-func init() {
-	if addr == "" {
-		addr = ":8081"
-	}
-}
 
 func main() {
 
@@ -36,11 +25,12 @@ func main() {
 	mux.HandleFunc("/posts", handler.PostsHandle)
 	mux.HandleFunc("/posts/", handler.PostHandle)
 
+	addr := util.GetStringEnv("SERVER_PORT", ":8081")
 	log.Printf("Starting Server on port %s\n", addr)
 
 	go testReadiness(start, addr)
 
-	startServer(mux)
+	startServer(mux, addr)
 }
 
 func initConnectionPool() {
@@ -59,7 +49,7 @@ func initConnectionPool() {
 	log.Printf("Connection pool is initialized in %s\n", time.Since(start))
 }
 
-func startServer(mux *http.ServeMux) {
+func startServer(mux *http.ServeMux, addr string) {
 	err := http.ListenAndServe(addr, mux)
 
 	if errors.Is(err, http.ErrServerClosed) {

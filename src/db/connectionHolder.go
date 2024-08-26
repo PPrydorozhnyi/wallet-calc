@@ -5,9 +5,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
-	"os"
 	"sync"
 	"time"
+	"wallet/util"
 )
 
 const (
@@ -20,30 +20,23 @@ const (
 )
 
 var (
-	connectionString = os.Getenv("DATABASE_URL")
 	connectionPool   *pgxpool.Pool
 	connectionPoolMu sync.Mutex
 )
 
-func init() {
-	if connectionString == "" {
-		connectionString = "postgres://wc_user:wc_password@localhost:5432/wc"
-	}
-}
-
 func config() (*pgxpool.Config, error) {
+	connectionString := util.GetStringEnv("DATABASE_URL", "postgres://wc_user:wc_password@localhost:5432/wc")
 	dbConfig, err := pgxpool.ParseConfig(connectionString)
 	if err != nil {
 		return nil, err
 	}
 
-	// todo add possibility to fetch configs from env variables
-	dbConfig.MaxConns = defaultMaxConns
-	dbConfig.MinConns = defaultMinConns
-	dbConfig.MaxConnLifetime = defaultMaxConnLifetime
-	dbConfig.MaxConnIdleTime = defaultMaxConnIdleTime
-	dbConfig.HealthCheckPeriod = defaultHealthCheckPeriod
-	dbConfig.ConnConfig.ConnectTimeout = defaultConnectTimeout
+	dbConfig.MaxConns = int32(util.GetIntEnv("DATABASE_CONNECTIONS_MAX", 10))
+	dbConfig.MinConns = int32(util.GetIntEnv("DATABASE_CONNECTIONS_MIN", 10))
+	dbConfig.MaxConnLifetime = util.GetDurationEnv("DATABASE_CONNECTIONS_MAX_LIFETIME", time.Hour)
+	dbConfig.MaxConnIdleTime = util.GetDurationEnv("DATABASE_CONNECTIONS_MAX_IDLE", 30*time.Minute)
+	dbConfig.HealthCheckPeriod = util.GetDurationEnv("DATABASE_CONNECTIONS_HEALTH_CHECK_PERIOD", 5*time.Minute)
+	dbConfig.ConnConfig.ConnectTimeout = util.GetDurationEnv("DATABASE_CONNECTIONS_CONN_TIMEOUT", 20*time.Second)
 
 	dbConfig.BeforeClose = func(c *pgx.Conn) {
 		log.Println("Closed the connection to the database")
