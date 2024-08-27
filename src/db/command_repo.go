@@ -7,6 +7,7 @@ import (
 
 func ApplyTransaction() error {
 	// TODO figure out which context should be used here
+	// https://github.com/jackc/pgx/issues/1223
 	// context.WithTimeout(context.Background(), 120*time.Second)
 
 	batch := &pgx.Batch{}
