@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/PPrydorozhnyi/wallet/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -105,4 +106,43 @@ func read(ctx context.Context, rs RowScanner, sql string, args ...any) error {
 	}
 
 	return nil
+}
+
+func batchUpsert(ctx context.Context, batch *pgx.Batch) error {
+	connection, err := connectionPool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer connection.Release()
+
+	tx, err := connection.Begin(ctx)
+
+	defer tx.Rollback(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	br := tx.SendBatch(ctx, batch)
+	defer br.Close()
+
+	affectedRows := 0
+	for i := 0; i < batch.Len(); i++ {
+		ct, e := br.Exec()
+
+		if e != nil {
+			return e
+		}
+		affectedRows += int(ct.RowsAffected())
+	}
+
+	if affectedRows != batch.Len() {
+		return fmt.Errorf("expected %d rows affected but got %d", batch.Len(), affectedRows)
+	}
+
+	if err = br.Close(); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
