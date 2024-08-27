@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+type RowScanner interface {
+	ScanRow(r pgx.Row) error
+}
+
 var (
 	connectionPool   *pgxpool.Pool
 	connectionPoolMu sync.Mutex
@@ -89,10 +93,16 @@ func HealthCheck() error {
 	return nil
 }
 
-func getConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	if connectionPool == nil {
-		return nil, errors.New("connectionPool is not initialized")
+func read(ctx context.Context, rs RowScanner, sql string, args ...any) error {
+	connection, err := connectionPool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer connection.Release()
+
+	if row := connection.QueryRow(ctx, sql, args); rs.ScanRow(row) != nil {
+		return err
 	}
 
-	return connectionPool.Acquire(ctx)
+	return nil
 }
