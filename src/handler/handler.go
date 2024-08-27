@@ -3,8 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/PPrydorozhnyi/wallet/db"
 	"github.com/PPrydorozhnyi/wallet/model"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strings"
@@ -29,20 +29,12 @@ func PostsHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PostHandle(w http.ResponseWriter, r *http.Request) {
+func AccountHandle(w http.ResponseWriter, r *http.Request) {
 	idString := strings.Split(r.URL.Path, "/")[2]
-	id, err := uuid.Parse(idString)
-
-	if err != nil {
-		http.Error(w, "Invalid Post ID", http.StatusBadRequest)
-		return
-	}
 
 	switch r.Method {
 	case "GET":
-		handleGetPost(w, r, id)
-	case "DELETE":
-		handleDeletePost(w, r, id)
+		handleGetAccount(w, r, idString)
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
@@ -56,15 +48,15 @@ func handleGetPosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleGetPost(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
-	post, ok := model.FindPost(id)
+func handleGetAccount(w http.ResponseWriter, r *http.Request, id string) {
+	account, err := db.GetWallet(id)
 
-	if !ok {
-		http.Error(w, "Post not found", http.StatusNotFound)
+	if err != nil {
+		http.Error(w, "Account not found", http.StatusNotFound)
 		return
 	}
 
-	serializePost(w, post)
+	serializeAccount(w, account)
 }
 
 func handleCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +91,9 @@ func serializePost(w http.ResponseWriter, post *model.Post) {
 	}
 }
 
-func handleDeletePost(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
-	model.DeletePost(id)
-	w.WriteHeader(http.StatusNoContent)
+func serializeAccount(w http.ResponseWriter, post *model.Account) {
+	err := json.NewEncoder(w).Encode(post)
+	if err != nil {
+		http.Error(w, "Cannot serialize account", http.StatusInternalServerError)
+	}
 }

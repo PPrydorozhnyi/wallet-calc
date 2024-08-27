@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"github.com/PPrydorozhnyi/wallet/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -71,10 +72,7 @@ func CloseConnectionPool() {
 
 func HealthCheck() error {
 	if connectionPool == nil {
-		err := CreateConnectionPool()
-		if err != nil {
-			return err
-		}
+		return errors.New("connectionPool is not initialized")
 	}
 
 	connection, err := connectionPool.Acquire(context.Background())
@@ -89,4 +87,12 @@ func HealthCheck() error {
 	}
 
 	return nil
+}
+
+func getConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	if connectionPool == nil {
+		return nil, errors.New("connectionPool is not initialized")
+	}
+
+	return connectionPool.Acquire(ctx)
 }

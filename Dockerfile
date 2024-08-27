@@ -17,10 +17,15 @@ RUN go mod download
 # Copy the application source code and build the binary
 COPY ./src ./
 
+# Download dependendencies for proto
+RUN mkdir "proto/third_party/google/type"
+RUN curl -o proto/third_party/google/type/decimal.proto  \
+    https://raw.githubusercontent.com/googleapis/googleapis/master/google/type/decimal.proto
+
 # Build proto
 RUN protoc --go_out=. --go_opt=paths=source_relative \
     --proto_path=. \
-    --proto_path=$GOPATH/pkg/mod/github.com/googleapis/googleapis@v0.0.0-20240823220356-a67e27687c1b \
+    --proto_path=proto/third_party \
     proto/ledger_record.proto \
     proto/wallet.proto
 

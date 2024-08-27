@@ -21,8 +21,9 @@
 # Go workspace file
 go.work
 
-#Protobuf generated files
+#Protobuf third party and generated files
 *.pb.go
+src/proto/third_party/
 
 #Goland
 *.iml
@@ -32,4 +33,3 @@ go.work
 /build/
 /dist/
 /out/
-

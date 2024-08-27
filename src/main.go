@@ -23,7 +23,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handler.Handle)
 	mux.HandleFunc("/posts", handler.PostsHandle)
-	mux.HandleFunc("/posts/", handler.PostHandle)
+	mux.HandleFunc("/accounts/", handler.AccountHandle)
 
 	addr := util.GetStringEnv("SERVER_PORT", ":8081")
 	log.Printf("Starting Server on port %s\n", addr)
