@@ -34,7 +34,20 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		handleGetAccount(w, r, idString)
+		account := handleGetAccount(w, r, idString)
+		serializeAccount(w, account)
+	default:
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}
+}
+
+func WalletsHandle(w http.ResponseWriter, r *http.Request) {
+	idString := strings.Split(r.URL.Path, "/")[4]
+
+	switch r.Method {
+	case "GET":
+		account := handleGetAccount(w, r, idString)
+		serializeAccountResponse(w, account)
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
@@ -48,15 +61,15 @@ func handleGetPosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleGetAccount(w http.ResponseWriter, r *http.Request, id string) {
+func handleGetAccount(w http.ResponseWriter, r *http.Request, id string) *model.Account {
 	account, err := db.GetWallet(id)
 
 	if err != nil {
 		http.Error(w, "Account not found", http.StatusNotFound)
-		return
+		return nil
 	}
 
-	serializeAccount(w, account)
+	return account
 }
 
 func handleCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -91,9 +104,22 @@ func serializePost(w http.ResponseWriter, post *model.Post) {
 	}
 }
 
-func serializeAccount(w http.ResponseWriter, post *model.Account) {
-	err := json.NewEncoder(w).Encode(post)
-	if err != nil {
+func serializeAccount(w http.ResponseWriter, account *model.Account) {
+	if account == nil {
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(account); err != nil {
+		http.Error(w, "Cannot serialize account", http.StatusInternalServerError)
+	}
+}
+
+func serializeAccountResponse(w http.ResponseWriter, account *model.Account) {
+	if account == nil {
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(model.ToAccountResponse(account)); err != nil {
 		http.Error(w, "Cannot serialize account", http.StatusInternalServerError)
 	}
 }

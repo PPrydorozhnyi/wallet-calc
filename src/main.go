@@ -24,6 +24,7 @@ func main() {
 	mux.HandleFunc("/", handler.Handle)
 	mux.HandleFunc("/posts", handler.PostsHandle)
 	mux.HandleFunc("/accounts/", handler.AccountHandle)
+	mux.HandleFunc("/api/v1/accounts/", handler.WalletsHandle)
 
 	addr := util.GetStringEnv("SERVER_PORT", ":8081")
 	log.Printf("Starting Server on port %s\n", addr)

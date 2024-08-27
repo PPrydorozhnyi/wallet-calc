@@ -30,8 +30,8 @@ func GetWallet(id string) (*model.Account, error) {
 	}
 
 	return &model.Account{
-		Id:      id,
-		Wallets: walletProto,
-		Version: version,
+		Id:          id,
+		WalletState: walletProto,
+		Version:     version,
 	}, nil
 }
