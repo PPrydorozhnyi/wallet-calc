@@ -18,7 +18,7 @@ RUN go mod download
 COPY ./src ./
 
 # Download dependendencies for proto
-RUN mkdir "proto/third_party/google/type"
+RUN mkdir -p "proto/third_party/google/type"
 RUN curl -o proto/third_party/google/type/decimal.proto  \
     https://raw.githubusercontent.com/googleapis/googleapis/master/google/type/decimal.proto
 
