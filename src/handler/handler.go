@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/PPrydorozhnyi/wallet/db"
 	"github.com/PPrydorozhnyi/wallet/model"
+	"github.com/PPrydorozhnyi/wallet/processor"
 	"io"
 	"net/http"
 	"strings"
@@ -42,7 +43,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func WalletsHandle(w http.ResponseWriter, r *http.Request) {
-	idString := strings.Split(r.URL.Path, "/")[4]
+	idString := r.PathValue("accountId")
 
 	switch r.Method {
 	case "GET":
@@ -51,6 +52,25 @@ func WalletsHandle(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
+}
+
+func TransactionsHandle(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("accountId")
+
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	request := &model.TransactionRequest{}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, "Bad request. Cannot parse body", http.StatusBadRequest)
+		return
+	}
+
+	ledger, err := processor.ApplyTransaction(idString, request)
+	serializeTransactionResponse(w, ledger)
 }
 
 func handleGetPosts(w http.ResponseWriter, r *http.Request) {
@@ -121,5 +141,11 @@ func serializeAccountResponse(w http.ResponseWriter, account *model.Account) {
 
 	if err := json.NewEncoder(w).Encode(model.ToAccountResponse(account)); err != nil {
 		http.Error(w, "Cannot serialize account", http.StatusInternalServerError)
+	}
+}
+
+func serializeTransactionResponse(w http.ResponseWriter, ledger *model.Ledger) {
+	if err := json.NewEncoder(w).Encode(model.ToTransactionResponse(ledger)); err != nil {
+		http.Error(w, "Cannot serialize ledger response", http.StatusInternalServerError)
 	}
 }

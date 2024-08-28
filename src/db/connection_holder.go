@@ -101,7 +101,9 @@ func read(ctx context.Context, rs RowScanner, sql string, args ...any) error {
 	}
 	defer connection.Release()
 
-	if row := connection.QueryRow(ctx, sql, args); rs.ScanRow(row) != nil {
+	row := connection.QueryRow(ctx, sql, args...)
+
+	if err = rs.ScanRow(row); err != nil {
 		return err
 	}
 

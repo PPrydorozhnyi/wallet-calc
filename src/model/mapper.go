@@ -44,3 +44,28 @@ func toBalanceDto(balanceId string, balance *wallet.Wallet_Balance) *BalanceDto 
 		UpdatedAt: balance.UpdatedAt,
 	}
 }
+
+func ToTransactionResponse(ledger *Ledger) *TransactionResponse {
+	return &TransactionResponse{
+		Id:          ledger.Id,
+		ProcessedAt: ledger.CreatedAt.UnixMilli(),
+		Actions:     toOutcomeDtos(ledger.LedgerRecord.Outcomes),
+	}
+}
+
+func toOutcomeDtos(outcomes []*wallet.LedgerRecord_Outcome) []*OutcomeDto {
+	outcomeDtos := make([]*OutcomeDto, len(outcomes))
+
+	for i, outcome := range outcomes {
+		balanceAfter, _ := adapters.ProtoDecimalToFloat(outcome.BalanceAfter) // todo add exception handling
+
+		outcomeDtos[i] = &OutcomeDto{
+			BalanceId:    outcome.BalanceId,
+			BalanceAfter: balanceAfter,
+			Currency:     outcome.Currency,
+			ActionId:     outcome.Id,
+		}
+	}
+
+	return outcomeDtos
+}

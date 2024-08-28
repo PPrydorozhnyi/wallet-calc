@@ -2,18 +2,43 @@ package db
 
 import (
 	"context"
+	"github.com/PPrydorozhnyi/wallet/model"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/protobuf/proto"
 )
 
-func ApplyTransaction() error {
+const (
+	ledgerInsertQuery = `
+						INSERT INTO ledgers (command_processing_id, account_id, ledger, command_id, created_ts, client_id, ref_command_processing_id, command_type)
+                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                           `
+	walletUpdateQuery = `
+						UPDATE accounts SET wallets = $3, version = $4
+                        	WHERE account_id = $1 AND version = $2;
+`
+)
+
+func PersistCommandResult(acc *model.Account, ledger *model.Ledger) error {
 	// TODO figure out which context should be used here
 	// https://github.com/jackc/pgx/issues/1223
 	// context.WithTimeout(context.Background(), 120*time.Second)
 
+	ledgerRecord, err := proto.Marshal(ledger.LedgerRecord)
+
+	if err != nil {
+		return err
+	}
+
+	walletState, err := proto.Marshal(acc.WalletState)
+
+	if err != nil {
+		return err
+	}
+
 	batch := &pgx.Batch{}
-	batch.Queue("insert into ledger(description, amount) values($1, $2)", "q1", 1)
-	batch.Queue("insert into bedger(description, amount) values($1, $2)", "q2", 2)
-	batch.Queue("update ledger set description = $1 where id = $2", "q3", -1)
+	batch.Queue(ledgerInsertQuery, ledger.Id, acc.Id, ledgerRecord, ledger.CommandId,
+		ledger.CreatedAt, ledger.ClientId, ledger.RefCommandProcessingId, ledger.CommandType)
+	batch.Queue(walletUpdateQuery, acc.Id, acc.Version, walletState, acc.Version+1)
 
 	return batchUpsert(context.Background(), batch)
 }

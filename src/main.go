@@ -20,18 +20,26 @@ func main() {
 	initConnectionPool()
 	defer db.CloseConnectionPool()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler.Handle)
-	mux.HandleFunc("/posts", handler.PostsHandle)
-	mux.HandleFunc("/accounts/", handler.AccountHandle)
-	mux.HandleFunc("/api/v1/accounts/", handler.WalletsHandle)
-
 	addr := util.GetStringEnv("SERVER_PORT", ":8081")
 	log.Printf("Starting Server on port %s\n", addr)
 
 	go testReadiness(start, addr)
 
+	mux := http.NewServeMux()
+	initMappings(mux)
 	startServer(mux, addr)
+}
+
+func initMappings(mux *http.ServeMux) {
+	mux.HandleFunc("/", handler.Handle)
+	mux.HandleFunc("/posts", handler.PostsHandle)
+	mux.HandleFunc("/accounts/", handler.AccountHandle)
+
+	//wallets
+	mux.HandleFunc("/api/v1/accounts/{accountId}", handler.WalletsHandle)
+
+	//commands
+	mux.HandleFunc("/api/v1/accounts/{accountId}/transactions", handler.TransactionsHandle)
 }
 
 func initConnectionPool() {

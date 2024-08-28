@@ -11,7 +11,9 @@ const (
 
 func GetWallet(id string) (*model.Account, error) {
 	// TODO figure out which context should be used here
-	a := &model.Account{}
+	a := &model.Account{
+		Id: id,
+	}
 	err := read(context.Background(), a, selectWalletQuery, id)
 
 	return a, err
