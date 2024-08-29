@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"math/big"
+	"github.com/shopspring/decimal"
 )
 
 type AccountResponse struct {
@@ -16,12 +16,12 @@ type WalletDto struct {
 }
 
 type BalanceDto struct {
-	Id        string     `json:"id"`
-	Type      string     `json:"type"`
-	Vertical  string     `json:"vertical"`
-	Amount    *big.Float `json:"amount"`
-	CreatedAt uint64     `json:"createdTs"`
-	UpdatedAt uint64     `json:"updatedTs"`
+	Id        string          `json:"id"`
+	Type      string          `json:"type"`
+	Vertical  string          `json:"vertical"`
+	Amount    decimal.Decimal `json:"amount"`
+	CreatedAt uint64          `json:"createdTs"`
+	UpdatedAt uint64          `json:"updatedTs"`
 }
 
 type TransactionResponse struct {
@@ -31,8 +31,8 @@ type TransactionResponse struct {
 }
 
 type OutcomeDto struct {
-	BalanceId    string     `json:"balanceId"`
-	BalanceAfter *big.Float `json:"balanceAfter"`
-	Currency     string     `json:"unit"`
-	ActionId     string     `json:"actionId"`
+	BalanceId    string          `json:"balanceId"`
+	BalanceAfter decimal.Decimal `json:"balanceAfter"`
+	Currency     string          `json:"unit"`
+	ActionId     string          `json:"actionId"`
 }

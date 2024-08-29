@@ -4,9 +4,9 @@ import (
 	"github.com/PPrydorozhnyi/wallet/db"
 	"github.com/PPrydorozhnyi/wallet/model"
 	"github.com/PPrydorozhnyi/wallet/proto"
+	"github.com/PPrydorozhnyi/wallet/util"
 	"github.com/google/uuid"
-	"github.com/googleapis/go-type-adapters/adapters"
-	"math/big"
+	bigDecimal "github.com/shopspring/decimal"
 	"time"
 )
 
@@ -40,22 +40,22 @@ func applyActions(request *model.TransactionRequest, ws *wallet.Wallet, err erro
 	for i, action := range *request.Actions {
 		balance := ws.Wallets[action.Currency].Balances[action.BalanceId]
 
-		originalBalance, e := adapters.ProtoDecimalToFloat(balance.Amount)
+		originalBalance, e := bigDecimal.NewFromString(balance.Amount.GetValue())
 		if e != nil {
 			return nil, err
 		}
 
 		// todo in request it should be big.Float also
 		// todo result has values like "200.4920000000000000000000000000000000005"
-		var resultBalance big.Float
+		var resultBalance bigDecimal.Decimal
 
 		if action.TransactionType == model.CREDIT {
-			resultBalance.Add(originalBalance, action.Amount)
+			resultBalance = originalBalance.Add(action.Amount)
 		} else {
-			resultBalance.Sub(originalBalance, action.Amount)
+			resultBalance = originalBalance.Sub(action.Amount)
 		}
 
-		outcomes[i] = buildOutcome(&resultBalance, &action)
+		outcomes[i] = buildOutcome(resultBalance, &action)
 		balance.Amount = outcomes[i].BalanceAfter
 	}
 	return outcomes, nil
@@ -89,7 +89,7 @@ func buildLedger(outcomes []*wallet.LedgerRecord_Outcome, request *model.Transac
 	}, nil
 }
 
-func buildOutcome(amountAfter *big.Float, action *model.Action) *wallet.LedgerRecord_Outcome {
+func buildOutcome(amountAfter bigDecimal.Decimal, action *model.Action) *wallet.LedgerRecord_Outcome {
 	txTypeValue := wallet.LedgerRecord_TransactionType_value[action.TransactionType]
 	txType := wallet.LedgerRecord_TransactionType(txTypeValue)
 
@@ -100,7 +100,7 @@ func buildOutcome(amountAfter *big.Float, action *model.Action) *wallet.LedgerRe
 		BalanceId:       action.BalanceId,
 		Currency:        action.Currency,
 		TransactionType: &txType,
-		Amount:          adapters.FloatToProtoDecimal(action.Amount),
-		BalanceAfter:    adapters.FloatToProtoDecimal(amountAfter),
+		Amount:          util.BigDecimalToDecimal(action.Amount),
+		BalanceAfter:    util.BigDecimalToDecimal(amountAfter),
 	}
 }

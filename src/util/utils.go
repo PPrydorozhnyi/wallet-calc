@@ -1,6 +1,8 @@
 package util
 
 import (
+	bigDecimal "github.com/shopspring/decimal"
+	"google.golang.org/genproto/googleapis/type/decimal"
 	"log"
 	"os"
 	"strconv"
@@ -49,4 +51,12 @@ func CopyMap(m map[string]interface{}) map[string]interface{} {
 	}
 
 	return cp
+}
+
+func BigDecimalToDecimal(d bigDecimal.Decimal) *decimal.Decimal {
+	return &decimal.Decimal{Value: d.String()}
+}
+
+func DecimalToBigDecimal(d *decimal.Decimal) (bigDecimal.Decimal, error) {
+	return bigDecimal.NewFromString(d.GetValue()) // todo add error handling
 }

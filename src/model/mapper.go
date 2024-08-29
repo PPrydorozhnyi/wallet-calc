@@ -2,7 +2,7 @@ package model
 
 import (
 	wallet "github.com/PPrydorozhnyi/wallet/proto"
-	"github.com/googleapis/go-type-adapters/adapters"
+	"github.com/PPrydorozhnyi/wallet/util"
 )
 
 func ToAccountResponse(account *Account) *AccountResponse {
@@ -34,7 +34,7 @@ func toWalletDto(currency string, walletEntry *wallet.Wallet_WalletEntry) *Walle
 
 func toBalanceDto(balanceId string, balance *wallet.Wallet_Balance) *BalanceDto {
 	//todo handle possible error
-	amount, _ := adapters.ProtoDecimalToFloat(balance.Amount)
+	amount, _ := util.DecimalToBigDecimal(balance.Amount)
 	return &BalanceDto{
 		Id:        balanceId,
 		Type:      balance.Type,
@@ -57,11 +57,12 @@ func toOutcomeDtos(outcomes []*wallet.LedgerRecord_Outcome) []*OutcomeDto {
 	outcomeDtos := make([]*OutcomeDto, len(outcomes))
 
 	for i, outcome := range outcomes {
-		balanceAfter, _ := adapters.ProtoDecimalToFloat(outcome.BalanceAfter) // todo add exception handling
+
+		bAfter, _ := util.DecimalToBigDecimal(outcome.BalanceAfter) // todo add exception handling
 
 		outcomeDtos[i] = &OutcomeDto{
 			BalanceId:    outcome.BalanceId,
-			BalanceAfter: balanceAfter,
+			BalanceAfter: bAfter,
 			Currency:     outcome.Currency,
 			ActionId:     outcome.Id,
 		}
