@@ -3,12 +3,84 @@ package processor
 import (
 	"github.com/PPrydorozhnyi/wallet/db"
 	"github.com/PPrydorozhnyi/wallet/model"
-	"github.com/PPrydorozhnyi/wallet/proto"
+	pb "github.com/PPrydorozhnyi/wallet/proto"
 	"github.com/PPrydorozhnyi/wallet/util"
 	"github.com/google/uuid"
 	bigDecimal "github.com/shopspring/decimal"
 	"time"
 )
+
+func CreateAccount(request *model.CreateWalletRequest) (*model.Ledger, error) {
+	wrs := request.Wallets
+	wallets := make(map[string]*pb.Wallet_WalletEntry, len(wrs))
+	for _, wr := range wrs {
+		wallets[wr.Currency] = createWallet(wr)
+	}
+
+	outcomes := buildWalletOutcomes(wallets, len(wrs))
+
+	acc := &model.Account{
+		Id: request.AccountId,
+		WalletState: &pb.Wallet{
+			Wallets: wallets,
+		},
+		Version: db.InitWalletVersion,
+	}
+
+	ledger, err := buildLedger(outcomes, request.Reason, request.AccountId, request.CommandId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ledger, db.PersistCommandResult(acc, ledger)
+}
+
+func buildWalletOutcomes(wallets map[string]*pb.Wallet_WalletEntry, capacity int) []*pb.LedgerRecord_Outcome {
+	outcomes := make([]*pb.LedgerRecord_Outcome, 0, capacity)
+
+	for currency, wr := range wallets {
+		for balanceId, balance := range wr.Balances {
+			id, _ := uuid.NewV7() //todo add exception handling
+			outcomes = append(outcomes, &pb.LedgerRecord_Outcome{
+				Id:           id.String(),
+				BalanceId:    balanceId,
+				Currency:     currency,
+				Vertical:     &balance.Vertical,
+				BalanceType:  &balance.Type,
+				Amount:       balance.Amount,
+				BalanceAfter: balance.Amount,
+			})
+		}
+	}
+
+	return outcomes
+}
+
+func createWallet(wallet *model.WalletDefinition) *pb.Wallet_WalletEntry {
+	return &pb.Wallet_WalletEntry{
+		Balances:  createBalances(wallet),
+		CreatedAt: time.Now().UnixMilli(),
+		UpdatedAt: time.Now().UnixMilli(),
+	}
+}
+
+func createBalances(wallet *model.WalletDefinition) map[string]*pb.Wallet_Balance {
+	balances := make(map[string]*pb.Wallet_Balance, len(wallet.Balances))
+
+	for _, bd := range wallet.Balances {
+		balanceId, _ := uuid.NewV7() // todo add error handling
+		balances[balanceId.String()] = &pb.Wallet_Balance{
+			Type:      bd.BalanceType,
+			Vertical:  bd.Vertical,
+			Amount:    util.BigDecimalToDecimal(bd.Amount),
+			CreatedAt: time.Now().UnixMilli(),
+			UpdatedAt: time.Now().UnixMilli(),
+		}
+	}
+
+	return balances
+}
 
 func ApplyTransaction(accountId string, request *model.TransactionRequest) (*model.Ledger, error) {
 	acc, err := db.GetWallet(accountId)
@@ -24,7 +96,7 @@ func ApplyTransaction(accountId string, request *model.TransactionRequest) (*mod
 		return nil, err
 	}
 
-	ledger, err := buildLedger(outcomes, request, accountId)
+	ledger, err := buildLedger(outcomes, request.Reason, accountId, request.CommandId)
 
 	if err != nil {
 		return nil, err
@@ -33,9 +105,9 @@ func ApplyTransaction(accountId string, request *model.TransactionRequest) (*mod
 	return ledger, db.PersistCommandResult(acc, ledger)
 }
 
-func applyActions(request *model.TransactionRequest, ws *wallet.Wallet, err error) ([]*wallet.LedgerRecord_Outcome,
+func applyActions(request *model.TransactionRequest, ws *pb.Wallet, err error) ([]*pb.LedgerRecord_Outcome,
 	error) {
-	outcomes := make([]*wallet.LedgerRecord_Outcome, len(*request.Actions))
+	outcomes := make([]*pb.LedgerRecord_Outcome, len(*request.Actions))
 
 	for i, action := range *request.Actions {
 		balance := ws.Wallets[action.Currency].Balances[action.BalanceId]
@@ -45,8 +117,6 @@ func applyActions(request *model.TransactionRequest, ws *wallet.Wallet, err erro
 			return nil, err
 		}
 
-		// todo in request it should be big.Float also
-		// todo result has values like "200.4920000000000000000000000000000000005"
 		var resultBalance bigDecimal.Decimal
 
 		if action.TransactionType == model.CREDIT {
@@ -61,16 +131,16 @@ func applyActions(request *model.TransactionRequest, ws *wallet.Wallet, err erro
 	return outcomes, nil
 }
 
-func buildLedger(outcomes []*wallet.LedgerRecord_Outcome, request *model.TransactionRequest,
-	accountId string) (*model.Ledger,
+func buildLedger(outcomes []*pb.LedgerRecord_Outcome, reason *model.Reason,
+	accountId string, commandId string) (*model.Ledger,
 	error) {
-	ledgerRecord := &wallet.LedgerRecord{
+	ledgerRecord := &pb.LedgerRecord{
 		Outcomes: outcomes,
-		Reason: &wallet.LedgerRecord_Reason{
-			Id:        request.Reason.Id,
-			Name:      request.Reason.Name,
-			Reference: request.Reason.Reference,
-			Meta:      request.Reason.Meta,
+		Reason: &pb.LedgerRecord_Reason{
+			Id:        reason.Id,
+			Name:      reason.Name,
+			Reference: reason.Reference,
+			Meta:      reason.Meta,
 		},
 	}
 	cid, err := uuid.NewV7()
@@ -83,19 +153,19 @@ func buildLedger(outcomes []*wallet.LedgerRecord_Outcome, request *model.Transac
 		AccountId:    accountId,
 		LedgerRecord: ledgerRecord,
 		CreatedAt:    time.Now(),
-		CommandId:    request.CommandId,
+		CommandId:    commandId,
 		ClientId:     0,
 		CommandType:  "TRANSACTION",
 	}, nil
 }
 
-func buildOutcome(amountAfter bigDecimal.Decimal, action *model.Action) *wallet.LedgerRecord_Outcome {
-	txTypeValue := wallet.LedgerRecord_TransactionType_value[action.TransactionType]
-	txType := wallet.LedgerRecord_TransactionType(txTypeValue)
+func buildOutcome(amountAfter bigDecimal.Decimal, action *model.Action) *pb.LedgerRecord_Outcome {
+	txTypeValue := pb.LedgerRecord_TransactionType_value[action.TransactionType]
+	txType := pb.LedgerRecord_TransactionType(txTypeValue)
 
 	id, _ := uuid.NewV7() //todo add exception handling
 
-	return &wallet.LedgerRecord_Outcome{
+	return &pb.LedgerRecord_Outcome{
 		Id:              id.String(),
 		BalanceId:       action.BalanceId,
 		Currency:        action.Currency,

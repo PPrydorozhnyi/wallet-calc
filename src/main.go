@@ -40,6 +40,7 @@ func initMappings(mux *http.ServeMux) {
 
 	//commands
 	mux.HandleFunc("/api/v1/accounts/{accountId}/transactions", handler.TransactionsHandle)
+	mux.HandleFunc("/api/v1/accounts", handler.AccountsHandle)
 }
 
 func initConnectionPool() {

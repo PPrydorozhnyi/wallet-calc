@@ -1,7 +1,7 @@
 package model
 
 import (
-	wallet "github.com/PPrydorozhnyi/wallet/proto"
+	pb "github.com/PPrydorozhnyi/wallet/proto"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/proto"
@@ -9,9 +9,9 @@ import (
 )
 
 type Account struct {
-	Id          string         `json:"id,omitempty"`
-	WalletState *wallet.Wallet `json:"walletState,omitempty"`
-	Version     int            `json:"version,omitempty"`
+	Id          string     `json:"id,omitempty"`
+	WalletState *pb.Wallet `json:"walletState,omitempty"`
+	Version     int        `json:"version,omitempty"`
 }
 
 func (a *Account) ScanRow(r pgx.Row) error {
@@ -22,7 +22,7 @@ func (a *Account) ScanRow(r pgx.Row) error {
 		return err
 	}
 
-	walletProto := &wallet.Wallet{}
+	walletProto := &pb.Wallet{}
 
 	if err := proto.Unmarshal(w, walletProto); err != nil {
 		return err
@@ -34,12 +34,12 @@ func (a *Account) ScanRow(r pgx.Row) error {
 }
 
 type Ledger struct {
-	Id                     uuid.UUID            `json:"commandProcessingId"`
-	AccountId              string               `json:"accountId"`
-	LedgerRecord           *wallet.LedgerRecord `json:"ledgerRecord"`
-	CreatedAt              time.Time            `json:"createdAt"`
-	CommandId              string               `json:"commandId"`
-	RefCommandProcessingId *uuid.UUID           `json:"refCommandProcessingId"`
-	ClientId               int                  `json:"clientId"`
-	CommandType            string               `json:"commandType"`
+	Id                     uuid.UUID        `json:"commandProcessingId"`
+	AccountId              string           `json:"accountId"`
+	LedgerRecord           *pb.LedgerRecord `json:"ledgerRecord"`
+	CreatedAt              time.Time        `json:"createdAt"`
+	CommandId              string           `json:"commandId"`
+	RefCommandProcessingId *uuid.UUID       `json:"refCommandProcessingId"`
+	ClientId               int              `json:"clientId"`
+	CommandType            string           `json:"commandType"`
 }

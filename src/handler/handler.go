@@ -30,6 +30,30 @@ func PostsHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func AccountsHandle(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	request := &model.CreateWalletRequest{}
+	err := json.NewDecoder(r.Body).Decode(request)
+	if err != nil {
+		http.Error(w, "Bad request. Cannot parse body", http.StatusBadRequest)
+		return
+	}
+
+	account, err := processor.CreateAccount(request)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	serializeTransactionResponse(w, account, true)
+}
+
 func AccountHandle(w http.ResponseWriter, r *http.Request) {
 	idString := strings.Split(r.URL.Path, "/")[2]
 
@@ -63,14 +87,20 @@ func TransactionsHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request := &model.TransactionRequest{}
-	err := json.NewDecoder(r.Body).Decode(&request)
+	err := json.NewDecoder(r.Body).Decode(request)
 	if err != nil {
 		http.Error(w, "Bad request. Cannot parse body", http.StatusBadRequest)
 		return
 	}
 
 	ledger, err := processor.ApplyTransaction(idString, request)
-	serializeTransactionResponse(w, ledger)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	serializeTransactionResponse(w, ledger, false)
 }
 
 func handleGetPosts(w http.ResponseWriter, r *http.Request) {
@@ -144,8 +174,8 @@ func serializeAccountResponse(w http.ResponseWriter, account *model.Account) {
 	}
 }
 
-func serializeTransactionResponse(w http.ResponseWriter, ledger *model.Ledger) {
-	if err := json.NewEncoder(w).Encode(model.ToTransactionResponse(ledger)); err != nil {
+func serializeTransactionResponse(w http.ResponseWriter, ledger *model.Ledger, extended bool) {
+	if err := json.NewEncoder(w).Encode(model.ToTransactionResponse(ledger, extended)); err != nil {
 		http.Error(w, "Cannot serialize ledger response", http.StatusInternalServerError)
 	}
 }

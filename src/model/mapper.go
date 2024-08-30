@@ -1,7 +1,7 @@
 package model
 
 import (
-	wallet "github.com/PPrydorozhnyi/wallet/proto"
+	pb "github.com/PPrydorozhnyi/wallet/proto"
 	"github.com/PPrydorozhnyi/wallet/util"
 )
 
@@ -21,7 +21,7 @@ func ToAccountResponse(account *Account) *AccountResponse {
 	}
 }
 
-func toWalletDto(currency string, walletEntry *wallet.Wallet_WalletEntry) *WalletDto {
+func toWalletDto(currency string, walletEntry *pb.Wallet_WalletEntry) *WalletDto {
 	balances := make([]*BalanceDto, 0, len(walletEntry.Balances))
 	for id, b := range walletEntry.Balances {
 		balances = append(balances, toBalanceDto(id, b))
@@ -32,7 +32,7 @@ func toWalletDto(currency string, walletEntry *wallet.Wallet_WalletEntry) *Walle
 	}
 }
 
-func toBalanceDto(balanceId string, balance *wallet.Wallet_Balance) *BalanceDto {
+func toBalanceDto(balanceId string, balance *pb.Wallet_Balance) *BalanceDto {
 	//todo handle possible error
 	amount, _ := util.DecimalToBigDecimal(balance.Amount)
 	return &BalanceDto{
@@ -45,15 +45,15 @@ func toBalanceDto(balanceId string, balance *wallet.Wallet_Balance) *BalanceDto 
 	}
 }
 
-func ToTransactionResponse(ledger *Ledger) *TransactionResponse {
-	return &TransactionResponse{
+func ToTransactionResponse(ledger *Ledger, extended bool) *CommandResponse {
+	return &CommandResponse{
 		Id:          ledger.Id,
 		ProcessedAt: ledger.CreatedAt.UnixMilli(),
-		Actions:     toOutcomeDtos(ledger.LedgerRecord.Outcomes),
+		Actions:     toOutcomeDtos(ledger.LedgerRecord.Outcomes, extended),
 	}
 }
 
-func toOutcomeDtos(outcomes []*wallet.LedgerRecord_Outcome) []*OutcomeDto {
+func toOutcomeDtos(outcomes []*pb.LedgerRecord_Outcome, extended bool) []*OutcomeDto {
 	outcomeDtos := make([]*OutcomeDto, len(outcomes))
 
 	for i, outcome := range outcomes {
@@ -65,6 +65,11 @@ func toOutcomeDtos(outcomes []*wallet.LedgerRecord_Outcome) []*OutcomeDto {
 			BalanceAfter: bAfter,
 			Currency:     outcome.Currency,
 			ActionId:     outcome.Id,
+		}
+
+		if extended {
+			outcomeDtos[i].BalanceType = outcome.BalanceType
+			outcomeDtos[i].Vertical = outcome.Vertical
 		}
 	}
 

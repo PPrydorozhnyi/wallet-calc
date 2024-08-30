@@ -16,6 +16,10 @@ const (
 						UPDATE accounts SET wallets = $3, version = $4
                         	WHERE account_id = $1 AND version = $2;
 `
+	walletInsertQuery = `
+						INSERT INTO accounts (account_id, wallets, version) VALUES ($1, $2, 0);
+`
+	InitWalletVersion = -1
 )
 
 func PersistCommandResult(acc *model.Account, ledger *model.Ledger) error {
@@ -38,7 +42,12 @@ func PersistCommandResult(acc *model.Account, ledger *model.Ledger) error {
 	batch := &pgx.Batch{}
 	batch.Queue(ledgerInsertQuery, ledger.Id, acc.Id, ledgerRecord, ledger.CommandId,
 		ledger.CreatedAt, ledger.ClientId, ledger.RefCommandProcessingId, ledger.CommandType)
-	batch.Queue(walletUpdateQuery, acc.Id, acc.Version, walletState, acc.Version+1)
+
+	if acc.Version == InitWalletVersion {
+		batch.Queue(walletInsertQuery, acc.Id, walletState)
+	} else {
+		batch.Queue(walletUpdateQuery, acc.Id, acc.Version, walletState, acc.Version+1)
+	}
 
 	return batchUpsert(context.Background(), batch)
 }

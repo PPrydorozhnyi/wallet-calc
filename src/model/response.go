@@ -20,11 +20,11 @@ type BalanceDto struct {
 	Type      string          `json:"type"`
 	Vertical  string          `json:"vertical"`
 	Amount    decimal.Decimal `json:"amount"`
-	CreatedAt uint64          `json:"createdTs"`
-	UpdatedAt uint64          `json:"updatedTs"`
+	CreatedAt int64           `json:"createdTs"`
+	UpdatedAt int64           `json:"updatedTs"`
 }
 
-type TransactionResponse struct {
+type CommandResponse struct {
 	Id          uuid.UUID     `json:"commandProcessingId"`
 	Actions     []*OutcomeDto `json:"actions"`
 	ProcessedAt int64         `json:"processedTs"`
@@ -35,4 +35,6 @@ type OutcomeDto struct {
 	BalanceAfter decimal.Decimal `json:"balanceAfter"`
 	Currency     string          `json:"unit"`
 	ActionId     string          `json:"actionId"`
+	BalanceType  *string         `json:"balanceType,omitempty"`
+	Vertical     *string         `json:"vertical,omitempty"`
 }
