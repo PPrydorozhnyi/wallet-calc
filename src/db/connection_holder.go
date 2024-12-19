@@ -18,7 +18,7 @@ type RowScanner interface {
 
 var (
 	connectionPool   *pgxpool.Pool
-	connectionPoolMu sync.Mutex
+	connectionPoolMu sync.Mutex // todo think about channel
 )
 
 func config() (*pgxpool.Config, error) {
